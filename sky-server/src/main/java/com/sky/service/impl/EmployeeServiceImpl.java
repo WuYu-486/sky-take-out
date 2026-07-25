@@ -125,4 +125,34 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employee;
     }
 
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        //检查DTO数据的合法性
+        if (employeeDTO.getId() == null) {
+            throw new BaseException("员工ID不能为空");
+        }
+        if (employeeDTO.getName() == null || employeeDTO.getName().trim().isEmpty()) {
+            throw new BaseException("员工姓名不能为空");
+        }
+        if (employeeDTO.getUsername() == null || employeeDTO.getUsername().trim().isEmpty()) {
+            throw new BaseException("用户名不能为空");
+        }
+        if (employeeDTO.getPhone() == null || employeeDTO.getPhone().trim().isEmpty()) {
+            throw new BaseException("手机号不能为空");
+        }
+        if (employeeDTO.getSex() == null || employeeDTO.getSex().trim().isEmpty()) {
+            throw new BaseException("性别不能为空");
+        }
+        if (employeeDTO.getIdNumber() == null || employeeDTO.getIdNumber().trim().isEmpty()) {
+            throw new BaseException("身份证号码不能为空");
+        }
+
+        //把DTO对象中的数据复制到Employee对象中
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        employeeMapper.update(employee);
+    }
+
 }
