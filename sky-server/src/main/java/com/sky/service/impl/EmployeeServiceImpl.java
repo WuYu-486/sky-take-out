@@ -1,17 +1,24 @@
 package com.sky.service.impl;
 
 import com.sky.constant.MessageConstant;
+import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
+import com.sky.context.BaseContext;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
+import com.sky.exception.BaseException;
 import com.sky.exception.PasswordErrorException;
 import com.sky.mapper.EmployeeMapper;
 import com.sky.service.EmployeeService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.time.LocalDateTime;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -54,6 +61,40 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         //3、返回实体对象
         return employee;
+    }
+
+    @Override
+    public void save(EmployeeDTO employeeDTO) {
+        // 参数校验
+        if (employeeDTO.getUsername() == null || employeeDTO.getUsername().trim().isEmpty()) {
+            throw new BaseException("用户名不能为空");
+        }
+        if (employeeDTO.getName() == null || employeeDTO.getName().trim().isEmpty()) {
+            throw new BaseException("员工姓名不能为空");
+        }
+        if (employeeDTO.getPhone() == null || employeeDTO.getPhone().trim().isEmpty()) {
+            throw new BaseException("手机号不能为空");
+        }
+        if (employeeDTO.getSex() == null || employeeDTO.getSex().trim().isEmpty()) {
+            throw new BaseException("性别不能为空");
+        }
+        if (employeeDTO.getIdNumber() == null || employeeDTO.getIdNumber().trim().isEmpty()) {
+            throw new BaseException("身份证号码不能为空");
+        }
+
+        // 对象复制
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+
+        // 设置非DTO字段
+        employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+        employee.setStatus(StatusConstant.ENABLE);
+        employee.setCreateTime(LocalDateTime.now());
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setCreateUser(BaseContext.getCurrentId());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+
+        employeeMapper.insert(employee);
     }
 
 }
