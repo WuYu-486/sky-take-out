@@ -68,7 +68,7 @@ public class DishServiceImpl implements DishService {
             //1.菜品是否起售中
             Dish dish = dishMapper.getById(id);
             if (dish.getStatus() == 1) {
-                throw new RuntimeException(MessageConstant.DISH_ON_SALE);
+                throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
 
             // 2.菜品是否在套餐内
