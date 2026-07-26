@@ -63,4 +63,15 @@ public class DishController {
         log.info("根据id查询菜品和口味数据：{}", id);
         return dishService.getById(id);
     }
+
+    /*
+    根据id修改菜品和口味数据
+     */
+    @PutMapping
+    @ApiOperation("根据id修改菜品和口味数据")
+    public Result<String> update(@RequestBody DishDTO dishDTO){
+        log.info("根据id修改菜品和口味数据：{}", dishDTO);
+        dishService.update(dishDTO);
+        return Result.success();
+    }
 }
