@@ -71,18 +71,23 @@ public class DishServiceImpl implements DishService {
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
 
-            // 2.菜品是否在套餐内
-            Integer count = setmealDishMapper.countByDishId(id);
-            if (count > 0) {
-                throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
-            }
+//            // 2.菜品是否在套餐内
+//            Integer count = setmealDishMapper.countByDishId(id);
+//            if (count > 0) {
+//                throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
+//            }
 
-            //3.删除菜品关联口味
-            dishFlavorMapper.deleteByDishId(id);
 
-            //4.删除菜品
-            dishMapper.deleteById(id);
         }
+        // 2.菜品是否在套餐内
+        Integer count = setmealDishMapper.countByDishIds(ids);
+        if (count > 0) throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
+
+        //3.删除菜品关联口味
+        dishFlavorMapper.deleteByDishIds(ids);
+
+        //4.删除菜品
+        dishMapper.deleteByIds(ids);
 
 
 

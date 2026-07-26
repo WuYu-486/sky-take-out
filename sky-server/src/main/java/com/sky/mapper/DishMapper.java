@@ -7,6 +7,8 @@ import com.sky.entity.Dish;
 import com.sky.vo.DishVO;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 import static com.sky.enumeration.OperationType.INSERT;
 
 @Mapper
@@ -36,5 +38,7 @@ public interface DishMapper {
 
     @Delete("delete from dish where id = #{id}")
     void deleteById(Long id);
+
+    void deleteByIds(@Param("ids") List<Long> ids);
 }
 
