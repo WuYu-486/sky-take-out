@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  aop:
+  proxy-target-class: true
   profiles:
     active: dev, local
   main:
