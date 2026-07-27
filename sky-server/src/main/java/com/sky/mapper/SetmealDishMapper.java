@@ -17,4 +17,8 @@ public interface SetmealDishMapper {
     Integer countByDishIds(@Param("ids") List<Long> ids);
 
     void save(List<SetmealDish> setmealDishes);
+
+    //把这里的*改成具体值
+    @Select("select id, setmeal_id, dish_id, name, price, copies from setmeal_dish where setmeal_id = #{setmealId}")
+    List<SetmealDish> getBySetmealId(Long setmealId);
 }

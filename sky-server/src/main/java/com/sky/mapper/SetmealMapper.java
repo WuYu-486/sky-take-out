@@ -33,4 +33,6 @@ public interface SetmealMapper {
     void save(Setmeal setmeal);
 
     Page<SetmealVO> pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
+
+    SetmealVO getById(Long id);
 }

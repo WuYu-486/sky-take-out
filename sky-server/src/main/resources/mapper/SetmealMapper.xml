@@ -19,4 +19,10 @@
     </where>
         order by s.create_time desc
     </select>
+
+    <select id="getById" resultType="com.sky.vo.SetmealVO">
+        select s.id, s.name, s.category_id, s.price, s.image, s.description,
+               s.status, s.update_time, c.name as category_name from setmeal s left join category c on s.category_id = c.id where s.id = #{id}
+    </select>
+
 </mapper>
