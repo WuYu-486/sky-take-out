@@ -15,4 +15,6 @@ public interface SetmealDishMapper {
     Integer countByDishId(Long dishId);
 
     Integer countByDishIds(@Param("ids") List<Long> ids);
+
+    void save(List<SetmealDish> setmealDishes);
 }
