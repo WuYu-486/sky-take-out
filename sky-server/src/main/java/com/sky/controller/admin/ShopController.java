@@ -31,7 +31,7 @@ public class ShopController {
     /*
     修改店铺营业状态
      */
-    @PutMapping("/status/{status}")
+    @PutMapping("/{status}")
     @ApiOperation("修改店铺营业状态")
     public Result updateStatus(@PathVariable Integer status){
         if (status == null || (status !=0 && status !=1)) {
