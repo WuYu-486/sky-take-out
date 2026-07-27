@@ -35,4 +35,7 @@ public interface SetmealMapper {
     Page<SetmealVO> pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
 
     SetmealVO getById(Long id);
+
+    @AutoFill(value = OperationType.UPDATE)
+   void update(Setmeal setmeal);
 }
