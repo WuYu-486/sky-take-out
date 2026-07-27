@@ -83,4 +83,14 @@ public class SetmealServiceImpl implements SetmealService {
             setmealDishMapper.save(setmealDishes);
         }
     }
+
+    @Override
+    @Transactional
+    public void delete(List<Long> ids) {
+        //根据id删除套餐信息
+        setmealMapper.delete(ids);
+
+        //根据套餐id删除套餐菜品信息
+        setmealDishMapper.deleteBySetmealIds(ids);
+    }
 }

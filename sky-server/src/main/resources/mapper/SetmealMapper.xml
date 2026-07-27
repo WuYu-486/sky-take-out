@@ -18,6 +18,13 @@
     </update>
 
 
+    <delete id="delete">
+        delete from setmeal where id in <foreach collection="ids" item="id" separator="," open="(" close=")">
+        #{id}
+    </foreach>
+    </delete>
+
+
     <select id="pageQuery" resultType="com.sky.vo.SetmealVO">
         select s.id, s.name, s.category_id, s.price, s.image, s.description,
         s.status, s.update_time, c.name as category_name from setmeal s left join category c on s.category_id = c.id <where>

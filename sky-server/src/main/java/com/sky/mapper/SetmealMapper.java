@@ -12,6 +12,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface SetmealMapper {
 
@@ -38,4 +40,6 @@ public interface SetmealMapper {
 
     @AutoFill(value = OperationType.UPDATE)
    void update(Setmeal setmeal);
+
+    void delete(List<Long> ids);
 }
