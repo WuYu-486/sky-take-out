@@ -11,3 +11,7 @@ sky:
     access-key-id: ${SKY_ALIOSS_ACCESS_KEY_ID}
     endpoint: oss-cn-beijing.aliyuncs.com
     bucket-name: sky-take-out-486
+  redis:
+    host: localhost
+    port: 6379
+    password: ${SKY_REDIS_PASSWORD}
