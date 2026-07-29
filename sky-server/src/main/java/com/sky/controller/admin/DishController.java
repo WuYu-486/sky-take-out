@@ -11,9 +11,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -23,12 +25,16 @@ public class DishController {
 
     @Autowired
     private DishService dishService;
+    @Autowired
+    private RedisTemplate redisTemplate;
     /*
     新增菜品
      */
     @PostMapping
     @ApiOperation("新增菜品")
     public Result<String> save(@RequestBody DishDTO dishDTO){
+        //清理缓存
+        cleanCache("dish_" + dishDTO.getCategoryId());
         log.info("新增菜品：{}", dishDTO);
         dishService.saveDishAndFlavor(dishDTO);
         return Result.success();
@@ -50,6 +56,8 @@ public class DishController {
     @DeleteMapping
     @ApiOperation("批量删除菜品及其口味")
     public Result<String> delete(@RequestParam List<Long> ids){
+        //清理缓存
+        cleanCache("dish_*");
         log.info("批量删除菜品：{}", ids);
         dishService.delete(ids);
         return Result.success();
@@ -71,6 +79,8 @@ public class DishController {
     @PutMapping
     @ApiOperation("根据id修改菜品和口味数据")
     public Result<String> update(@RequestBody DishDTO dishDTO){
+        //清理缓存
+        cleanCache("dish_*");
         log.info("根据id修改菜品和口味数据：{}", dishDTO);
         dishService.update(dishDTO);
         return Result.success();
@@ -92,8 +102,18 @@ public class DishController {
     @PostMapping("/status/{status}")
     @ApiOperation("菜品起售停售")
     public Result<String> status(@PathVariable Integer status, Long id){
+        //清理缓存
+        cleanCache("dish_*");
         log.info("菜品起售停售：{}", status);
         dishService.status(status, id);
         return Result.success();
+    }
+
+    private void cleanCache(String pattern){
+        log.info("清理缓存：{}", pattern);
+        Set keys = redisTemplate.keys(pattern);
+        if (keys != null && keys.size() > 0){
+            redisTemplate.delete(keys);
+        }
     }
 }
