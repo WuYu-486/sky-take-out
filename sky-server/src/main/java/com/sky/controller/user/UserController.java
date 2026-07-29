@@ -31,7 +31,7 @@ public class UserController {
     /*
     微信登录
      */
-    @PostMapping("/wechatLogin")
+    @PostMapping("/login")
     @ApiOperation("微信登录")
     public Result<UserLoginVO> wechatLogin(@RequestBody UserLoginDTO userLoginDTO) {
         log.info("微信登录: {}", userLoginDTO);
