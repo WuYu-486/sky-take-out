@@ -50,5 +50,6 @@ public interface DishMapper {
             "create_time, update_time, create_user, update_user from dish where category_id = #{categoryId} and status = 1")
     List<Dish> list(Long categoryId);
 
+    List<Dish> listWithFlavor(Dish dish);
 }
 
