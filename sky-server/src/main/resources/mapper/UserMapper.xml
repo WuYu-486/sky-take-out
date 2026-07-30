@@ -24,4 +24,11 @@
             <if test="createTime != null">#{createTime},</if>
         </trim>
     </insert>
+
+
+    <select id="getById" resultType="com.sky.entity.User">
+        select id, openid, name, phone, sex, id_number, avatar, create_time
+        from user
+        where id = #{userId}
+    </select>
 </mapper>
