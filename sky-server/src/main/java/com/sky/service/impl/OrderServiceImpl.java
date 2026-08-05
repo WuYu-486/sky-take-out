@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,14 +103,28 @@ public class OrderServiceImpl implements OrderService {
      * @return
      */
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
+        // 入参校验
+        if (ordersPaymentDTO.getOrderNumber() == null || ordersPaymentDTO.getOrderNumber().isEmpty()) {
+            throw new OrderBusinessException("订单号不能为空");
+        }
+
         // 当前登录用户id
         Long userId = BaseContext.getCurrentId();
         User user = userMapper.getById(userId);
 
+        // 根据订单号查询订单，校验订单存在且属于当前用户
+        Orders ordersDB = orderMapper.getByNumber(ordersPaymentDTO.getOrderNumber());
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (!ordersDB.getUserId().equals(userId)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
         //调用微信支付接口，生成预支付交易单
         JSONObject jsonObject = weChatPayUtil.pay(
                 ordersPaymentDTO.getOrderNumber(), //商户订单号
-                new BigDecimal(0.01), //支付金额，单位 元
+                ordersDB.getAmount(), //支付金额，单位 元（使用订单真实金额）
                 "苍穹外卖订单", //商品描述
                 user.getOpenid() //微信用户的openid
         );
@@ -135,6 +148,10 @@ public class OrderServiceImpl implements OrderService {
 
         // 根据订单号查询订单
         Orders ordersDB = orderMapper.getByNumber(outTradeNo);
+        if (ordersDB == null) {
+            log.error("支付回调失败：订单不存在，订单号={}", outTradeNo);
+            return;
+        }
 
         // 根据订单id更新订单的状态、支付方式、支付状态、结账时间
         Orders orders = Orders.builder()
@@ -185,6 +202,11 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void cancel(OrdersCancelDTO ordersCancelDTO) {
+        // 入参校验
+        if (ordersCancelDTO == null || ordersCancelDTO.getId() == null) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
         // 根据id查询订单
         Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
         if (ordersDB == null) {
@@ -203,18 +225,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 如果已支付，需要先退款
-        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
-            try {
-                weChatPayUtil.refund(
-                        ordersDB.getNumber(),
-                        ordersDB.getNumber() + System.currentTimeMillis(),
-                        ordersDB.getAmount(),
-                        ordersDB.getAmount());
-            } catch (Exception e) {
-                log.error("订单退款失败：{}", e.getMessage());
-                throw new OrderBusinessException("订单退款失败");
-            }
-        }
+        refundIfPaid(ordersDB);
 
         // 更新订单状态、取消原因、取消时间
         Orders orders = Orders.builder()
@@ -274,19 +285,7 @@ public class OrderServiceImpl implements OrderService {
                 orderVO.setOrderDetailList(orderDetailList);
 
                 // 拼接菜品摘要字符串，如：鱼香肉丝x2,米饭x1
-                StringBuilder sb = new StringBuilder();
-                if (orderDetailList != null) {
-                    for (OrderDetail detail : orderDetailList) {
-                        sb.append(detail.getName())
-                          .append("x")
-                          .append(detail.getNumber())
-                          .append(",");
-                    }
-                }
-                if (sb.length() > 0) {
-                    sb.deleteCharAt(sb.length() - 1);
-                }
-                orderVO.setOrderDishes(sb.toString());
+                orderVO.setOrderDishes(buildOrderDishes(orderDetailList));
 
                 orderVOList.add(orderVO);
             }
@@ -354,19 +353,7 @@ public class OrderServiceImpl implements OrderService {
         orderVO.setOrderDetailList(orderDetailList);
 
         // 拼接菜品摘要字符串（与列表页一致）
-        StringBuilder sb = new StringBuilder();
-        if (orderDetailList != null) {
-            for (OrderDetail detail : orderDetailList) {
-                sb.append(detail.getName())
-                  .append("x")
-                  .append(detail.getNumber())
-                  .append(",");
-            }
-        }
-        if (sb.length() > 0) {
-            sb.deleteCharAt(sb.length() - 1);
-        }
-        orderVO.setOrderDishes(sb.toString());
+        orderVO.setOrderDishes(buildOrderDishes(orderDetailList));
 
         return orderVO;
     }
@@ -378,6 +365,11 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        // 入参校验
+        if (ordersConfirmDTO == null || ordersConfirmDTO.getId() == null) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
         // 根据id查询订单
         Orders ordersDB = orderMapper.getById(ordersConfirmDTO.getId());
         if (ordersDB == null) {
@@ -405,6 +397,11 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        // 入参校验
+        if (ordersRejectionDTO == null || ordersRejectionDTO.getId() == null) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
         // 根据id查询订单
         Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
         if (ordersDB == null) {
@@ -419,18 +416,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 如果已支付，需要先退款
-        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
-            try {
-                weChatPayUtil.refund(
-                        ordersDB.getNumber(),
-                        ordersDB.getNumber() + System.currentTimeMillis(),
-                        ordersDB.getAmount(),
-                        ordersDB.getAmount());
-            } catch (Exception e) {
-                log.error("订单退款失败：{}", e.getMessage());
-                throw new OrderBusinessException("订单退款失败");
-            }
-        }
+        refundIfPaid(ordersDB);
 
         // 更新订单状态为已取消(6)，记录拒单原因和拒单时间
         Orders orders = Orders.builder()
@@ -449,6 +435,11 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void cancelByAdmin(OrdersCancelDTO ordersCancelDTO) {
+        // 入参校验
+        if (ordersCancelDTO == null || ordersCancelDTO.getId() == null) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
         // 根据id查询订单
         Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
         if (ordersDB == null) {
@@ -462,18 +453,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 如果已支付，需要先退款
-        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
-            try {
-                weChatPayUtil.refund(
-                        ordersDB.getNumber(),
-                        ordersDB.getNumber() + System.currentTimeMillis(),
-                        ordersDB.getAmount(),
-                        ordersDB.getAmount());
-            } catch (Exception e) {
-                log.error("订单退款失败：{}", e.getMessage());
-                throw new OrderBusinessException("订单退款失败");
-            }
-        }
+        refundIfPaid(ordersDB);
 
         // 更新订单状态为已取消(6)，记录取消原因和取消时间
         Orders orders = Orders.builder()
@@ -536,6 +516,51 @@ public class OrderServiceImpl implements OrderService {
                 .status(Orders.COMPLETED)
                 .build();
         orderMapper.update(orders);
+    }
+
+    /**
+     * 订单已支付则发起微信退款
+     *
+     * @param orders 订单
+     */
+    private void refundIfPaid(Orders orders) {
+        if (!Orders.PAID.equals(orders.getPayStatus())) {
+            return;
+        }
+        try {
+            // 退款单号 = 商户订单号 + 时间戳，避免重复退款
+            weChatPayUtil.refund(
+                    orders.getNumber(),
+                    orders.getNumber() + System.currentTimeMillis(),
+                    orders.getAmount(),
+                    orders.getAmount());
+            log.info("订单退款成功：orderNumber={}", orders.getNumber());
+        } catch (Exception e) {
+            log.error("订单退款失败：{}", e.getMessage());
+            throw new OrderBusinessException("订单退款失败");
+        }
+    }
+
+    /**
+     * 拼接订单菜品摘要，如：鱼香肉丝x2,米饭x1
+     *
+     * @param orderDetailList 订单明细
+     * @return 菜品摘要字符串
+     */
+    private String buildOrderDishes(List<OrderDetail> orderDetailList) {
+        StringBuilder sb = new StringBuilder();
+        if (orderDetailList != null) {
+            for (OrderDetail detail : orderDetailList) {
+                sb.append(detail.getName())
+                  .append("x")
+                  .append(detail.getNumber())
+                  .append(",");
+            }
+        }
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
     }
 
 }

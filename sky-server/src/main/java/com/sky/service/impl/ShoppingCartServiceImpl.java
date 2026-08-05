@@ -1,5 +1,7 @@
 package com.sky.service.impl;
 import com.sky.context.BaseContext;
+import com.sky.constant.MessageConstant;
+import com.sky.constant.StatusConstant;
 import com.sky.dto.ShoppingCartDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.ShoppingCart;
@@ -9,6 +11,7 @@ import com.sky.mapper.SetmealMapper;
 import com.sky.mapper.ShoppingCartMapper;
 import com.sky.service.ShoppingCartService;
 import com.sky.vo.SetmealVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 购物车业务层
+ */
 @Service
+@Slf4j
 public class ShoppingCartServiceImpl implements ShoppingCartService {
 
     @Autowired
@@ -31,7 +38,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     public void add(ShoppingCartDTO shoppingCartDTO) {
         //入参校验
         if (shoppingCartDTO.getDishId() == null && shoppingCartDTO.getSetmealId() == null) {
-            throw new ShoppingCartBusinessException("请选择要添加的商品");
+            throw new ShoppingCartBusinessException(MessageConstant.PARAM_ERROR);
         }
 
         //判断当前添加购物车商品是否已有
@@ -54,7 +61,11 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 //添加的是菜品
                 Dish dish = dishMapper.getById(dishId);
                 if (dish == null) {
-                    throw new ShoppingCartBusinessException("该菜品不存在");
+                    throw new ShoppingCartBusinessException(MessageConstant.DISH_NOT_FOUND);
+                }
+                // 校验菜品是否在售
+                if (!StatusConstant.ENABLE.equals(dish.getStatus())) {
+                    throw new ShoppingCartBusinessException(MessageConstant.GOODS_NOT_ON_SALE);
                 }
                 shoppingCart.setName(dish.getName());
                 shoppingCart.setImage(dish.getImage());
@@ -63,7 +74,11 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 //添加的是套餐
                 SetmealVO setmeal = setmealMapper.getById(shoppingCartDTO.getSetmealId());
                 if (setmeal == null) {
-                    throw new ShoppingCartBusinessException("该套餐不存在");
+                    throw new ShoppingCartBusinessException(MessageConstant.SETMEAL_NOT_FOUND);
+                }
+                // 校验套餐是否在售
+                if (!StatusConstant.ENABLE.equals(setmeal.getStatus())) {
+                    throw new ShoppingCartBusinessException(MessageConstant.GOODS_NOT_ON_SALE);
                 }
                 shoppingCart.setName(setmeal.getName());
                 shoppingCart.setImage(setmeal.getImage());
@@ -72,6 +87,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             shoppingCart.setNumber(1);
             shoppingCart.setCreateTime(java.time.LocalDateTime.now());
             shoppingCartMapper.insert(shoppingCart);
+            log.info("添加购物车成功：userId={}, dishId={}, setmealId={}", userID, dishId, shoppingCartDTO.getSetmealId());
         }
 
     }

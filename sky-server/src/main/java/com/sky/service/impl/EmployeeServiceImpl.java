@@ -34,6 +34,12 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @return
      */
     public Employee login(EmployeeLoginDTO employeeLoginDTO) {
+        // 入参校验
+        if (employeeLoginDTO.getUsername() == null || employeeLoginDTO.getUsername().trim().isEmpty()
+                || employeeLoginDTO.getPassword() == null || employeeLoginDTO.getPassword().isEmpty()) {
+            throw new BaseException("用户名和密码不能为空");
+        }
+
         String username = employeeLoginDTO.getUsername();
         //密码加密
         String password = employeeLoginDTO.getPassword();
@@ -55,7 +61,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
-        if (employee.getStatus() == StatusConstant.DISABLE) {
+        if (StatusConstant.DISABLE.equals(employee.getStatus())) {
             //账号被锁定
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
@@ -103,15 +109,26 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void setStatus(Integer status, Long id) {
+        if (id == null || (!StatusConstant.ENABLE.equals(status) && !StatusConstant.DISABLE.equals(status))) {
+            throw new BaseException("员工状态参数错误");
+        }
         Employee employee = new Employee();
         employee.setStatus(status);
         employee.setId(id);
+        // 校验员工存在，防止更新不存在的记录
+        Employee employeeDB = employeeMapper.getById(id);
+        if (employeeDB == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
         employeeMapper.update(employee);
     }
 
     @Override
     public Employee getById(Long id) {
         Employee employee = employeeMapper.getById(id);
+        if (employee == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
         employee.setPassword("****");
         return employee;
     }

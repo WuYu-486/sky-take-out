@@ -9,6 +9,7 @@ import com.sky.dto.CategoryDTO;
 import com.sky.dto.CategoryPageQueryDTO;
 import com.sky.entity.Category;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.exception.BaseException;
 import com.sky.mapper.CategoryMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealMapper;
@@ -40,6 +41,14 @@ public class CategoryServiceImpl implements CategoryService {
      * @param categoryDTO
      */
     public void save(CategoryDTO categoryDTO) {
+        // 入参校验：分类名称和类型不能为空
+        if (categoryDTO.getName() == null || categoryDTO.getName().trim().isEmpty()) {
+            throw new BaseException("分类名称不能为空");
+        }
+        if (categoryDTO.getType() == null) {
+            throw new BaseException("分类类型不能为空");
+        }
+
         Category category = new Category();
         //属性拷贝
         BeanUtils.copyProperties(categoryDTO, category);
@@ -54,6 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setUpdateUser(BaseContext.getCurrentId());
 
         categoryMapper.insert(category);
+        log.info("新增分类成功：name={}, type={}", category.getName(), category.getType());
     }
 
     /**
@@ -73,6 +83,9 @@ public class CategoryServiceImpl implements CategoryService {
      * @param id
      */
     public void deleteById(Long id) {
+        if (id == null) {
+            throw new BaseException(MessageConstant.PARAM_ERROR);
+        }
         //查询当前分类是否关联了菜品，如果关联了就抛出业务异常
         Integer count = dishMapper.countByCategoryId(id);
         if(count > 0){
@@ -96,6 +109,9 @@ public class CategoryServiceImpl implements CategoryService {
      * @param categoryDTO
      */
     public void update(CategoryDTO categoryDTO) {
+        if (categoryDTO.getId() == null) {
+            throw new BaseException("分类id不能为空");
+        }
         Category category = new Category();
         BeanUtils.copyProperties(categoryDTO,category);
 
@@ -112,6 +128,9 @@ public class CategoryServiceImpl implements CategoryService {
      * @param id
      */
     public void startOrStop(Integer status, Long id) {
+        if (id == null || (!StatusConstant.ENABLE.equals(status) && !StatusConstant.DISABLE.equals(status))) {
+            throw new BaseException("分类状态参数错误");
+        }
         Category category = Category.builder()
                 .id(id)
                 .status(status)
