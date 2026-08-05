@@ -73,4 +73,6 @@ public interface OrderService {
      * @param ordersCancelDTO
      */
     void cancelByAdmin(OrdersCancelDTO ordersCancelDTO);
+
+    void delivery(Long id);
 }
