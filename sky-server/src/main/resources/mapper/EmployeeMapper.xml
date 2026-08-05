@@ -3,6 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.EmployeeMapper">
 
+    <!-- 动态修改员工 -->
     <update id="update" parameterType="com.sky.entity.Employee">
         update employee
         <set>
@@ -18,6 +19,7 @@
         where id = #{id}
     </update>
 
+    <!-- 员工分页查询 -->
     <select id="getByPage" resultType="com.sky.entity.Employee">
         select * from employee
         <where>

@@ -1,14 +1,11 @@
 package com.sky.mapper;
 
 import com.github.pagehelper.Page;
-import com.sky.entity.Employee;
-import com.sky.enumeration.OperationType;
 import com.sky.dto.CategoryPageQueryDTO;
 import com.sky.entity.Category;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.ResultType;
 
 import java.util.List;
 
@@ -49,6 +46,5 @@ public interface CategoryMapper {
      * @param type
      * @return
      */
-    @ResultType(Category.class)
     List<Category> list(Integer type);
 }

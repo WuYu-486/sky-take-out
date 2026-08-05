@@ -3,6 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.ShoppingCartMapper">
 
+    <!-- 动态新增购物车商品 -->
     <insert id="insert">
         insert into shopping_cart
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -29,6 +30,7 @@
         </trim>
     </insert>
 
+    <!-- 批量新增购物车商品（再来一单） -->
     <insert id="insertBatch">
         insert into shopping_cart (name, user_id, dish_id, setmeal_id, dish_flavor, number, amount, image, create_time)
         values
@@ -37,7 +39,7 @@
         </foreach>
     </insert>
 
-
+    <!-- 动态修改购物车商品 -->
     <update id="update">
         update shopping_cart
         <set>
@@ -66,7 +68,7 @@
         where id = #{id}
     </update>
 
-
+    <!-- 条件查询购物车商品 -->
     <select id="select" resultType="com.sky.entity.ShoppingCart">
         select id, name, user_id, dish_id, setmeal_id, dish_flavor, number, amount, image, create_time
         from shopping_cart

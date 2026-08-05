@@ -48,5 +48,5 @@ public interface OrderMapper {
      * 统计各状态订单数量
      * @return
      */
-    List<Map<Integer, Integer>> countByStatus();
+    List<Map<String, Object>> countByStatus();
 }

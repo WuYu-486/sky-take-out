@@ -3,6 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.OrderMapper">
 
+    <!-- 新增订单（自动回填主键id） -->
     <insert id="insert" parameterType="Orders" useGeneratedKeys="true" keyProperty="id">
         insert into orders (number, status, user_id, address_book_id, order_time, checkout_time, pay_method,
                             pay_status, amount, remark, phone, address, consignee, estimated_delivery_time,
@@ -13,6 +14,7 @@
              #{deliveryStatus}, #{packAmount}, #{tablewareNumber}, #{tablewareStatus})
     </insert>
 
+    <!-- 动态修改订单 -->
     <update id="update" parameterType="com.sky.entity.Orders">
         update orders
         <set>
@@ -47,6 +49,7 @@
         where id = #{id}
     </update>
 
+    <!-- C端用户历史订单分页查询（限定当前用户） -->
     <select id="pageQuery" resultType="com.sky.entity.Orders">
         select * from orders
         <where>
@@ -72,6 +75,7 @@
         order by order_time desc
     </select>
 
+    <!-- 管理端订单条件搜索 -->
     <select id="conditionSearch" resultType="com.sky.entity.Orders">
         select * from orders
         <where>
@@ -94,6 +98,7 @@
         order by order_time desc
     </select>
 
+    <!-- 统计各状态订单数量 -->
     <select id="countByStatus" resultType="java.util.Map">
         select status, count(id) as count
         from orders

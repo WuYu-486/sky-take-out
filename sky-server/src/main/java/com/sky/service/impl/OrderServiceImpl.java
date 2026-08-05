@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
         }
         ShoppingCart shoppingCart = new ShoppingCart();
         shoppingCart.setUserId(userId);
-        List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(shoppingCart);
+        List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(userId);
         if(shoppingCartList == null || shoppingCartList.isEmpty()){
             throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
         }
@@ -302,7 +302,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderStatisticsVO statistics() {
         // 查询各状态订单数量
-        List<Map<Integer, Integer>> list = orderMapper.countByStatus();
+        List<Map<String, Object>> list = orderMapper.countByStatus();
 
         OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
         orderStatisticsVO.setToBeConfirmed(0);
@@ -310,9 +310,9 @@ public class OrderServiceImpl implements OrderService {
         orderStatisticsVO.setDeliveryInProgress(0);
 
         if (list != null && !list.isEmpty()) {
-            for (Map<Integer, Integer> map : list) {
-                Integer status = map.get("status");
-                Integer count = map.get("count");
+            for (Map<String, Object> map : list) {
+                Integer status = (Integer) map.get("status");
+                Integer count = ((Number) map.get("count")).intValue();
                 if (status == null || count == null) {
                     continue;
                 }
