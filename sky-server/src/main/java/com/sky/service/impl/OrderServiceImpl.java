@@ -18,6 +18,7 @@ import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -294,6 +296,42 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return new PageResult(page.getTotal(), orderVOList);
+    }
+
+    /**
+     * 统计各状态订单数量
+     *
+     * @return
+     */
+    @Override
+    public OrderStatisticsVO statistics() {
+        // 查询各状态订单数量
+        List<Map<Integer, Integer>> list = orderMapper.countByStatus();
+
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        orderStatisticsVO.setToBeConfirmed(0);
+        orderStatisticsVO.setConfirmed(0);
+        orderStatisticsVO.setDeliveryInProgress(0);
+
+        if (list != null && !list.isEmpty()) {
+            for (Map<Integer, Integer> map : list) {
+                Integer status = map.get("status");
+                Integer count = map.get("count");
+                if (status == null || count == null) {
+                    continue;
+                }
+                // 2待接单 3待派送 4派送中
+                if (Orders.TO_BE_CONFIRMED.equals(status)) {
+                    orderStatisticsVO.setToBeConfirmed(count);
+                } else if (Orders.CONFIRMED.equals(status)) {
+                    orderStatisticsVO.setConfirmed(count);
+                } else if (Orders.DELIVERY_IN_PROGRESS.equals(status)) {
+                    orderStatisticsVO.setDeliveryInProgress(count);
+                }
+            }
+        }
+
+        return orderStatisticsVO;
     }
 
 }

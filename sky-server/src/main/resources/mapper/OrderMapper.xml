@@ -91,4 +91,10 @@
         order by order_time desc
     </select>
 
+    <select id="countByStatus" resultType="java.util.Map">
+        select status, count(id) as count
+        from orders
+        group by status
+    </select>
+
 </mapper>
