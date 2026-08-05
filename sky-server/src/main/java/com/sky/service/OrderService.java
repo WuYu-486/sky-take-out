@@ -55,4 +55,11 @@ public interface OrderService {
      * @return
      */
     OrderStatisticsVO statistics();
+
+    /**
+     * 管理端根据id查询订单详情
+     * @param id
+     * @return
+     */
+    OrderVO getById(Long id);
 }

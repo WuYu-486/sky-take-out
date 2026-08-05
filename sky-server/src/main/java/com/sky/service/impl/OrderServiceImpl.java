@@ -334,6 +334,46 @@ public class OrderServiceImpl implements OrderService {
         return orderStatisticsVO;
     }
 
+    /**
+     * 管理端根据id查询订单详情（不做归属校验）
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public OrderVO getById(Long id) {
+        // 根据id查询订单
+        Orders orders = orderMapper.getById(id);
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 根据订单id查询订单明细
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+
+        // 组装VO返回
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+
+        // 拼接菜品摘要字符串（与列表页一致）
+        StringBuilder sb = new StringBuilder();
+        if (orderDetailList != null) {
+            for (OrderDetail detail : orderDetailList) {
+                sb.append(detail.getName())
+                  .append("x")
+                  .append(detail.getNumber())
+                  .append(",");
+            }
+        }
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        orderVO.setOrderDishes(sb.toString());
+
+        return orderVO;
+    }
+
 }
 
 
