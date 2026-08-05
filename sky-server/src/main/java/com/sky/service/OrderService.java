@@ -61,4 +61,10 @@ public interface OrderService {
     OrderVO getById(Long id);
 
     void confirm(OrdersConfirmDTO ordersConfirmDTO);
+
+    /**
+     * 拒单
+     * @param ordersRejectionDTO
+     */
+    void rejection(OrdersRejectionDTO ordersRejectionDTO);
 }
