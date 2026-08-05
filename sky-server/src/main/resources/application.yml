@@ -47,6 +47,8 @@ sky:
     user-secret-key: itcast
     user-ttl: 7200000
     user-token-name: authentication
+  shop:
+    address: 北京市海淀区上地十街10号
 
   alioss:
     endpoint: ${sky.alioss-endpoint}
