@@ -46,4 +46,6 @@ public interface OrderService {
      * @param id 订单id
      */
     void repetition(Long id);
+
+    PageResult page(OrdersPageQueryDTO ordersPageQueryDTO);
 }
