@@ -34,6 +34,11 @@ public class DishController {
     @GetMapping("/list")
     @ApiOperation("根据分类id查询菜品")
     public Result<List<DishVO>> list(Long categoryId) {
+        // 入参校验：分类id不能为空
+        if (categoryId == null) {
+            return Result.error("分类id不能为空");
+        }
+
         //打redis缓存步骤:
         //1.1获取redis的key
         String key = "dish_" + categoryId;

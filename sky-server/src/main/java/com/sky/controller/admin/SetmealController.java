@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.Cacheable;
 
 import java.util.List;
 
@@ -32,6 +31,9 @@ public class SetmealController {
     @ApiOperation("新增套餐")
     @CacheEvict(value = "setmealCache", key = "#setmealDTO.categoryId")
     public Result<String> save(@RequestBody SetmealDTO setmealDTO){
+        if (setmealDTO == null) {
+            return Result.error("套餐信息不能为空");
+        }
         log.info("新增套餐：{}", setmealDTO);
         setmealService.save(setmealDTO);
         return Result.success();
@@ -66,6 +68,9 @@ public class SetmealController {
     @ApiOperation("修改套餐")
     @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> update(@RequestBody SetmealDTO setmealDTO){
+        if (setmealDTO == null) {
+            return Result.error("套餐信息不能为空");
+        }
         log.info("修改套餐：{}", setmealDTO);
         setmealService.update(setmealDTO);
         return Result.success();

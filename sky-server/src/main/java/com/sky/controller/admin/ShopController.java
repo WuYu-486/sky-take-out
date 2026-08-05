@@ -1,6 +1,7 @@
 package com.sky.controller.admin;
 
 import com.sky.constant.RedisKeyConstant;
+import com.sky.constant.StatusConstant;
 import com.sky.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -17,8 +18,11 @@ public class ShopController {
 
     @Autowired
     RedisTemplate redisTemplate;
-    /*
-    查询店铺营业状态
+
+    /**
+     * 查询店铺营业状态
+     *
+     * @return 0打烊 1营业
      */
     @GetMapping("/status")
     @ApiOperation("查询店铺营业状态")
@@ -28,14 +32,18 @@ public class ShopController {
         return Result.success(shopStatus != null ? shopStatus :0);
     }
 
-    /*
-    修改店铺营业状态
+    /**
+     * 修改店铺营业状态
+     *
+     * @param status 0打烊 1营业
+     * @return
      */
     @PutMapping("/{status}")
     @ApiOperation("修改店铺营业状态")
-    public Result updateStatus(@PathVariable Integer status){
-        if (status == null || (status !=0 && status !=1)) {
-            return Result.error("营业状态只能为0或1喵");
+    public Result<String> updateStatus(@PathVariable Integer status){
+        // 入参校验：状态只能是0（打烊）或1（营业）
+        if (!StatusConstant.ENABLE.equals(status) && !StatusConstant.DISABLE.equals(status)) {
+            return Result.error("营业状态只能为0或1");
         }
         log.info("修改店铺营业状态：{}", status);
         redisTemplate.opsForValue().set(RedisKeyConstant.SHOP_STATUS, status);

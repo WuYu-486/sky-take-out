@@ -21,19 +21,27 @@ public class ShoppingCartController {
     @Autowired
     private ShoppingCartService shoppingCartService;
 
-    /*
-    添加购物车
+    /**
+     * 添加购物车
+     *
+     * @param shoppingCartDTO 商品信息（菜品id或套餐id）
+     * @return
      */
     @PostMapping("/add")
     @ApiOperation("添加购物车")
     public Result<String> add(@RequestBody ShoppingCartDTO shoppingCartDTO){
+        if (shoppingCartDTO == null) {
+            return Result.error("添加购物车参数不能为空");
+        }
         log.info("添加购物车：{}", shoppingCartDTO);
         shoppingCartService.add(shoppingCartDTO);
         return Result.success();
     }
 
-    /*
-    查看购物车
+    /**
+     * 查看购物车
+     *
+     * @return 当前用户购物车列表
      */
     @GetMapping("/list")
     @ApiOperation("查看购物车")
@@ -42,9 +50,14 @@ public class ShoppingCartController {
         return Result.success(shoppingCartService.list());
     }
 
+    /**
+     * 清空购物车
+     *
+     * @return
+     */
     @DeleteMapping("/clean")
     @ApiOperation("删除购物车")
-    public Result<?> delete(){
+    public Result<String> delete(){
         shoppingCartService.delete();
         return Result.success();
     }

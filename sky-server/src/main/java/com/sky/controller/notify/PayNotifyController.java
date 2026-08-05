@@ -1,6 +1,5 @@
 package com.sky.controller.notify;
 
-import com.alibaba.druid.support.json.JSONUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sky.properties.WeChatProperties;
@@ -38,6 +37,12 @@ public class PayNotifyController {
     public void paySuccessNotify(HttpServletRequest request, HttpServletResponse response) throws Exception {
         //读取数据
         String body = readData(request);
+        // 空请求体保护，防止后续解析空指针
+        if (body == null || body.isEmpty()) {
+            log.error("支付回调失败：请求体为空");
+            response.setStatus(400);
+            return;
+        }
         log.info("支付成功回调：{}", body);
 
         //数据解密
@@ -88,9 +93,16 @@ public class PayNotifyController {
     private String decryptData(String body) throws Exception {
         JSONObject resultObject = JSON.parseObject(body);
         JSONObject resource = resultObject.getJSONObject("resource");
+        // 微信通知数据缺失时直接抛异常，由调用方记录日志
+        if (resource == null) {
+            throw new RuntimeException("支付回调数据resource为空");
+        }
         String ciphertext = resource.getString("ciphertext");
         String nonce = resource.getString("nonce");
         String associatedData = resource.getString("associated_data");
+        if (ciphertext == null || nonce == null || associatedData == null) {
+            throw new RuntimeException("支付回调数据不完整");
+        }
 
         AesUtil aesUtil = new AesUtil(weChatProperties.getApiV3Key().getBytes(StandardCharsets.UTF_8));
         //密文解密
@@ -111,7 +123,7 @@ public class PayNotifyController {
         map.put("code", "SUCCESS");
         map.put("message", "SUCCESS");
         response.setHeader("Content-type", ContentType.APPLICATION_JSON.toString());
-        response.getOutputStream().write(JSONUtils.toJSONString(map).getBytes(StandardCharsets.UTF_8));
+        response.getOutputStream().write(JSON.toJSONString(map).getBytes(StandardCharsets.UTF_8));
         response.flushBuffer();
     }
 }

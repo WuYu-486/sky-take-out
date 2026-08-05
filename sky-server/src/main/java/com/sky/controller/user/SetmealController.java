@@ -49,6 +49,9 @@ public class SetmealController {
     @GetMapping("/dish/{id}")
     @ApiOperation("根据套餐id查询包含的菜品列表")
     public Result<List<DishItemVO>> dishList(@PathVariable("id") Long id) {
+        if (id == null) {
+            return Result.error("套餐id不能为空");
+        }
         List<DishItemVO> list = setmealService.getDishItemById(id);
         return Result.success(list);
     }

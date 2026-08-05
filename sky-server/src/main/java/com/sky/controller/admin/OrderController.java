@@ -66,7 +66,10 @@ public class OrderController {
      */
     @PutMapping("/confirm")
     @ApiOperation("接单接口")
-    public Result<?> confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO){
+    public Result<String> confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO){
+        if (ordersConfirmDTO == null) {
+            return Result.error("接单参数不能为空");
+        }
         log.info("商家接单,{}",ordersConfirmDTO);
         orderService.confirm(ordersConfirmDTO);
         return Result.success();
@@ -80,6 +83,9 @@ public class OrderController {
     @PutMapping("/rejection")
     @ApiOperation("拒单接口")
     public Result<String> rejection(@RequestBody OrdersRejectionDTO ordersRejectionDTO){
+        if (ordersRejectionDTO == null) {
+            return Result.error("拒单参数不能为空");
+        }
         log.info("商家拒单:{}", ordersRejectionDTO);
         orderService.rejection(ordersRejectionDTO);
         return Result.success();
@@ -90,7 +96,10 @@ public class OrderController {
      */
     @PutMapping("/cancel")
     @ApiOperation("管理端取消订单")
-    public Result<?> cancel(@RequestBody OrdersCancelDTO ordersCancelDTO){
+    public Result<String> cancel(@RequestBody OrdersCancelDTO ordersCancelDTO){
+        if (ordersCancelDTO == null) {
+            return Result.error("取消订单参数不能为空");
+        }
         log.info("取消订单,{}",ordersCancelDTO);
         orderService.cancelByAdmin(ordersCancelDTO);
         return Result.success();
@@ -101,7 +110,7 @@ public class OrderController {
      */
     @PutMapping("/delivery/{id}")
     @ApiOperation("管理端派送订单接口")
-    public Result<?> delivery(@PathVariable Long id){
+    public Result<String> delivery(@PathVariable Long id){
         log.info("派送订单,{}",id);
         orderService.delivery(id);
         return Result.success();
@@ -112,7 +121,7 @@ public class OrderController {
      */
     @PutMapping("/complete/{id}")
     @ApiOperation("管理端完成订单接口")
-    public Result<?> complete(@PathVariable Long id){
+    public Result<String> complete(@PathVariable Long id){
         log.info("完成订单,{}",id);
         orderService.complete(id);
         return Result.success();

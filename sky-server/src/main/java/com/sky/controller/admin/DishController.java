@@ -33,6 +33,9 @@ public class DishController {
     @PostMapping
     @ApiOperation("新增菜品")
     public Result<String> save(@RequestBody DishDTO dishDTO){
+        if (dishDTO == null) {
+            return Result.error("菜品信息不能为空");
+        }
         //清理缓存
         cleanCache("dish_" + dishDTO.getCategoryId());
         log.info("新增菜品：{}", dishDTO);
@@ -79,6 +82,9 @@ public class DishController {
     @PutMapping
     @ApiOperation("根据id修改菜品和口味数据")
     public Result<String> update(@RequestBody DishDTO dishDTO){
+        if (dishDTO == null) {
+            return Result.error("菜品信息不能为空");
+        }
         //清理缓存
         cleanCache("dish_*");
         log.info("根据id修改菜品和口味数据：{}", dishDTO);

@@ -15,7 +15,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.jaxb.SpringDataJaxb;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -44,6 +43,11 @@ public class EmployeeController {
     @PostMapping("/login")
     @ApiOperation("员工登录")
     public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
+        // 入参校验：用户名和密码不能为空
+        if (employeeLoginDTO.getUsername() == null || employeeLoginDTO.getUsername().trim().isEmpty()
+                || employeeLoginDTO.getPassword() == null || employeeLoginDTO.getPassword().isEmpty()) {
+            return Result.error("用户名和密码不能为空");
+        }
         log.info("员工登录：{}", employeeLoginDTO);
 
         Employee employee = employeeService.login(employeeLoginDTO);
@@ -84,7 +88,9 @@ public class EmployeeController {
     @PostMapping
     @ApiOperation("新增员工")
     public Result<String> save(@RequestBody EmployeeDTO employeeDTO){
-
+        if (employeeDTO == null) {
+            return Result.error("员工信息不能为空");
+        }
         log.info("新增员工：{}", employeeDTO);
         employeeService.save(employeeDTO);
         return Result.success();
@@ -129,6 +135,9 @@ public class EmployeeController {
     @PutMapping
     @ApiOperation("修改员工信息")
     public Result<String> update(@RequestBody EmployeeDTO employeeDTO){
+        if (employeeDTO == null) {
+            return Result.error("员工信息不能为空");
+        }
         log.info("修改员工信息：{}", employeeDTO);
         employeeService.update(employeeDTO);
         return Result.success();

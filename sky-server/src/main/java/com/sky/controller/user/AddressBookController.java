@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+/**
+ * C端地址簿相关接口
+ */
 @RestController
 @RequestMapping("/user/addressBook")
 @Api(tags = "C端地址簿接口")
@@ -41,10 +44,19 @@ public class AddressBookController {
     @PostMapping
     @ApiOperation("新增地址")
     public Result save(@RequestBody AddressBook addressBook) {
+        if (addressBook == null) {
+            return Result.error("地址信息不能为空");
+        }
         addressBookService.save(addressBook);
         return Result.success();
     }
 
+    /**
+     * 根据id查询地址
+     *
+     * @param id 地址id
+     * @return
+     */
     @GetMapping("/{id}")
     @ApiOperation("根据id查询地址")
     public Result<AddressBook> getById(@PathVariable Long id) {
@@ -61,6 +73,9 @@ public class AddressBookController {
     @PutMapping
     @ApiOperation("根据id修改地址")
     public Result update(@RequestBody AddressBook addressBook) {
+        if (addressBook == null) {
+            return Result.error("地址信息不能为空");
+        }
         addressBookService.update(addressBook);
         return Result.success();
     }
@@ -74,6 +89,9 @@ public class AddressBookController {
     @PutMapping("/default")
     @ApiOperation("设置默认地址")
     public Result setDefault(@RequestBody AddressBook addressBook) {
+        if (addressBook == null) {
+            return Result.error("地址信息不能为空");
+        }
         addressBookService.setDefault(addressBook);
         return Result.success();
     }
@@ -86,7 +104,7 @@ public class AddressBookController {
      */
     @DeleteMapping
     @ApiOperation("根据id删除地址")
-    public Result deleteById(Long id) {
+    public Result deleteById(@RequestParam Long id) {
         addressBookService.deleteById(id);
         return Result.success();
     }
@@ -94,7 +112,7 @@ public class AddressBookController {
     /**
      * 查询默认地址
      */
-    @GetMapping("default")
+    @GetMapping("/default")
     @ApiOperation("查询默认地址")
     public Result<AddressBook> getDefault() {
         //SQL:select * from address_book where user_id = ? and is_default = 1

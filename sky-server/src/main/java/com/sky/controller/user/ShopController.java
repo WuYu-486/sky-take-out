@@ -20,8 +20,10 @@ public class ShopController {
     @Autowired
     RedisTemplate redisTemplate;
 
-    /*
-    查询店铺营业状态
+    /**
+     * 查询店铺营业状态
+     *
+     * @return 0打烊 1营业
      */
     @GetMapping("/status")
     @ApiOperation("查询店铺营业状态")

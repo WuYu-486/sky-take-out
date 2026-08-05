@@ -25,12 +25,18 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    /*
-    用户下单
+    /**
+     * 用户下单
+     *
+     * @param orderSubmitDTO 下单参数
+     * @return 订单信息
      */
     @PostMapping("/submit")
     @ApiOperation("用户下单")
     public Result<OrderSubmitVO> submit(@RequestBody OrdersSubmitDTO orderSubmitDTO){
+        if (orderSubmitDTO == null) {
+            return Result.error("下单参数不能为空");
+        }
         log.info("用户下单{}",orderSubmitDTO);
         OrderSubmitVO orderSubmitVO = orderService.submit(orderSubmitDTO);
         return Result.success(orderSubmitVO);
@@ -46,14 +52,20 @@ public class OrderController {
     @PutMapping("/payment")
     @ApiOperation("订单支付")
     public Result<OrderPaymentVO> payment(@RequestBody OrdersPaymentDTO ordersPaymentDTO) throws Exception {
+        if (ordersPaymentDTO == null) {
+            return Result.error("支付参数不能为空");
+        }
         log.info("订单支付：{}", ordersPaymentDTO);
         OrderPaymentVO orderPaymentVO = orderService.payment(ordersPaymentDTO);
         log.info("生成预支付交易单：{}", orderPaymentVO);
         return Result.success(orderPaymentVO);
     }
 
-    /*
-    历史订单查询
+    /**
+     * 历史订单查询
+     *
+     * @param ordersPageQueryDTO 分页查询参数
+     * @return 分页结果
      */
     @GetMapping("/historyOrders")
     @ApiOperation("C端用户历史订单查询")
@@ -95,8 +107,11 @@ public class OrderController {
         orderService.cancel(ordersCancelDTO);
         return Result.success();
     }
-    /*
-    再来一单
+    /**
+     * 再来一单（将原订单商品重新加入购物车）
+     *
+     * @param id 订单id
+     * @return
      */
     @PostMapping("/repetition/{id}")
     @ApiOperation("C端用户再来一单")
