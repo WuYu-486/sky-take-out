@@ -37,6 +37,9 @@
             <if test="status != null">
                 status = #{status},
             </if>
+            <if test="estimatedDeliveryTime != null">
+                estimated_delivery_time = #{estimatedDeliveryTime},
+            </if>
             <if test="deliveryTime != null">
                 delivery_time = #{deliveryTime}
             </if>

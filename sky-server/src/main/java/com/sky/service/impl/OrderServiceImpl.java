@@ -5,10 +5,7 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersCancelDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersPaymentDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
@@ -372,6 +369,33 @@ public class OrderServiceImpl implements OrderService {
         orderVO.setOrderDishes(sb.toString());
 
         return orderVO;
+    }
+
+    /**
+     * 接单
+     *
+     * @param ordersConfirmDTO
+     */
+    @Override
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(ordersConfirmDTO.getId());
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 只有待接单(2)状态的订单才能接单
+        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        // 更新订单状态为已接单(3)，并设置预计送达时间（当前时间 + 60分钟）
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.CONFIRMED)
+                .estimatedDeliveryTime(LocalDateTime.now().plusMinutes(60))
+                .build();
+        orderMapper.update(orders);
     }
 
 }
