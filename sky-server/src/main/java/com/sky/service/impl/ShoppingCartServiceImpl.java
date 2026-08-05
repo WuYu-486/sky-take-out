@@ -100,6 +100,36 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     }
 
     @Override
+    @Transactional
+    public void sub(ShoppingCartDTO shoppingCartDTO) {
+        // 入参校验
+        if (shoppingCartDTO == null || (shoppingCartDTO.getDishId() == null && shoppingCartDTO.getSetmealId() == null)) {
+            throw new ShoppingCartBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
+        // 根据菜品id或套餐id查询当前用户的购物车记录
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
+        shoppingCart.setUserId(BaseContext.getCurrentId());
+        List<ShoppingCart> shoppingCarts = shoppingCartMapper.select(shoppingCart);
+        if (shoppingCarts == null || shoppingCarts.isEmpty()) {
+            throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_ITEM_NOT_FOUND);
+        }
+
+        ShoppingCart existShoppingCart = shoppingCarts.get(0);
+        if (existShoppingCart.getNumber() > 1) {
+            // 数量大于1：数量减一
+            existShoppingCart.setNumber(existShoppingCart.getNumber() - 1);
+            shoppingCartMapper.update(existShoppingCart);
+        } else {
+            // 数量为1：删除该条购物车记录
+            shoppingCartMapper.deleteByCartId(existShoppingCart.getId());
+        }
+        log.info("减少购物车商品成功：userId={}, dishId={}, setmealId={}", existShoppingCart.getUserId(),
+                shoppingCartDTO.getDishId(), shoppingCartDTO.getSetmealId());
+    }
+
+    @Override
     public void delete() {
         shoppingCartMapper.deleteById(BaseContext.getCurrentId());
     }

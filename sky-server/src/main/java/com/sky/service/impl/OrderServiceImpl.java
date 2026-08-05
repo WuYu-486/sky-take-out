@@ -19,6 +19,7 @@ import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -102,15 +103,14 @@ public class OrderServiceImpl implements OrderService {
      * @param ordersPaymentDTO
      * @return
      */
-    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
+    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) {
         // 入参校验
-        if (ordersPaymentDTO.getOrderNumber() == null || ordersPaymentDTO.getOrderNumber().isEmpty()) {
-            throw new OrderBusinessException("订单号不能为空");
+        if (ordersPaymentDTO == null || ordersPaymentDTO.getOrderNumber() == null || ordersPaymentDTO.getOrderNumber().isEmpty()) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
         }
 
         // 当前登录用户id
         Long userId = BaseContext.getCurrentId();
-        User user = userMapper.getById(userId);
 
         // 根据订单号查询订单，校验订单存在且属于当前用户
         Orders ordersDB = orderMapper.getByNumber(ordersPaymentDTO.getOrderNumber());
@@ -121,22 +121,41 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
 
-        //调用微信支付接口，生成预支付交易单
-        JSONObject jsonObject = weChatPayUtil.pay(
-                ordersPaymentDTO.getOrderNumber(), //商户订单号
-                ordersDB.getAmount(), //支付金额，单位 元（使用订单真实金额）
-                "苍穹外卖订单", //商品描述
-                user.getOpenid() //微信用户的openid
-        );
-
-        if (jsonObject.getString("code") != null && jsonObject.getString("code").equals("ORDERPAID")) {
-            throw new OrderBusinessException("该订单已支付");
+        // 已支付的订单直接返回，避免重复支付
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+            log.info("订单已支付，无需重复支付，订单号={}", ordersPaymentDTO.getOrderNumber());
+            return buildMockPayVO();
         }
 
-        OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
-        vo.setPackageStr(jsonObject.getString("package"));
+        // 模拟支付成功（教学演示模式，未接入真实微信支付）：
+        // 直接更新订单为已支付、待接单状态
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.TO_BE_CONFIRMED)
+                .payStatus(Orders.PAID)
+                .payMethod(ordersPaymentDTO.getPayMethod())
+                .checkoutTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+        log.warn("模拟支付成功：订单号={}，请尽快接入真实微信支付", ordersPaymentDTO.getOrderNumber());
 
-        return vo;
+        // 返回模拟的预支付参数（前端跳过微信调起，直接跳转支付成功页）
+        return buildMockPayVO();
+    }
+
+    /**
+     * 构建模拟支付的预支付参数
+     *
+     * @return
+     */
+    private OrderPaymentVO buildMockPayVO() {
+        return OrderPaymentVO.builder()
+                .timeStamp(String.valueOf(System.currentTimeMillis() / 1000))
+                .nonceStr(RandomStringUtils.randomNumeric(32))
+                .packageStr("prepay_id=mock")
+                .signType("RSA")
+                .paySign("mock")
+                .build();
     }
 
     /**
@@ -527,18 +546,8 @@ public class OrderServiceImpl implements OrderService {
         if (!Orders.PAID.equals(orders.getPayStatus())) {
             return;
         }
-        try {
-            // 退款单号 = 商户订单号 + 时间戳，避免重复退款
-            weChatPayUtil.refund(
-                    orders.getNumber(),
-                    orders.getNumber() + System.currentTimeMillis(),
-                    orders.getAmount(),
-                    orders.getAmount());
-            log.info("订单退款成功：orderNumber={}", orders.getNumber());
-        } catch (Exception e) {
-            log.error("订单退款失败：{}", e.getMessage());
-            throw new OrderBusinessException("订单退款失败");
-        }
+        // 教学演示模式：支付为模拟支付，退款同样模拟，不调用真实微信退款接口
+        log.warn("模拟退款成功：orderNumber={}，请尽快接入真实微信支付", orders.getNumber());
     }
 
     /**

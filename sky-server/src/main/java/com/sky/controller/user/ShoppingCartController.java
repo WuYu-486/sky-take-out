@@ -39,6 +39,23 @@ public class ShoppingCartController {
     }
 
     /**
+     * 减少购物车中一个商品
+     *
+     * @param shoppingCartDTO 商品信息（菜品id或套餐id）
+     * @return
+     */
+    @PostMapping("/sub")
+    @ApiOperation("减少购物车中一个商品")
+    public Result<String> sub(@RequestBody ShoppingCartDTO shoppingCartDTO){
+        if (shoppingCartDTO == null) {
+            return Result.error("减少购物车参数不能为空");
+        }
+        log.info("减少购物车商品：{}", shoppingCartDTO);
+        shoppingCartService.sub(shoppingCartDTO);
+        return Result.success();
+    }
+
+    /**
      * 查看购物车
      *
      * @return 当前用户购物车列表

@@ -2,9 +2,11 @@ package com.sky.utils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.sky.exception.BaseException;
 import com.sky.properties.WeChatProperties;
 import com.wechat.pay.contrib.apache.httpclient.WechatPayHttpClientBuilder;
 import com.wechat.pay.contrib.apache.httpclient.util.PemUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -50,10 +52,17 @@ public class WeChatPayUtil {
      * @return
      */
     private CloseableHttpClient getClient() {
-        PrivateKey merchantPrivateKey = null;
+        // 校验微信支付配置是否完整，避免证书路径为空时 new File(null) 抛出空指针异常
+        if (StringUtils.isBlank(weChatProperties.getMchid())
+                || StringUtils.isBlank(weChatProperties.getMchSerialNo())
+                || StringUtils.isBlank(weChatProperties.getPrivateKeyFilePath())
+                || StringUtils.isBlank(weChatProperties.getWeChatPayCertFilePath())) {
+            throw new BaseException("微信支付配置不完整，请检查 sky.wechat 下的 mchid、mchSerialNo、privateKeyFilePath、weChatPayCertFilePath");
+        }
+
         try {
             //merchantPrivateKey商户API私钥，如何加载商户API私钥请看常见问题
-            merchantPrivateKey = PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath())));
+            PrivateKey merchantPrivateKey = PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath())));
             //加载平台证书文件
             X509Certificate x509Certificate = PemUtil.loadCertificate(new FileInputStream(new File(weChatProperties.getWeChatPayCertFilePath())));
             //wechatPayCertificates微信支付平台证书列表。你也可以使用后面章节提到的“定时更新平台证书功能”，而不需要关心平台证书的来龙去脉
@@ -64,11 +73,10 @@ public class WeChatPayUtil {
                     .withWechatPay(wechatPayCertificates);
 
             // 通过WechatPayHttpClientBuilder构造的HttpClient，会自动的处理签名和验签
-            CloseableHttpClient httpClient = builder.build();
-            return httpClient;
+            return builder.build();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
+            throw new BaseException("微信支付证书文件不存在：" + weChatProperties.getPrivateKeyFilePath()
+                    + " 或 " + weChatProperties.getWeChatPayCertFilePath());
         }
     }
 
