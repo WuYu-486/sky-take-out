@@ -40,4 +40,10 @@ public interface OrderService {
      * @param ordersCancelDTO
      */
     void cancel(OrdersCancelDTO ordersCancelDTO);
+
+    /**
+     * 再来一单
+     * @param id 订单id
+     */
+    void repetition(Long id);
 }

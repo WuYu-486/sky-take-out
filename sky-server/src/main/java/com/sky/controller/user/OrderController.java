@@ -95,5 +95,15 @@ public class OrderController {
         orderService.cancel(ordersCancelDTO);
         return Result.success();
     }
+    /*
+    再来一单
+     */
+    @PostMapping("/repetition/{id}")
+    @ApiOperation("C端用户再来一单")
+    public Result<String> repetition(@PathVariable Long id){
+        log.info("再来一单:{}", id);
+        orderService.repetition(id);
+        return Result.success();
+    }
 
 }

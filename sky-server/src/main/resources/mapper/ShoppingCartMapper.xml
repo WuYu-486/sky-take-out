@@ -29,6 +29,14 @@
         </trim>
     </insert>
 
+    <insert id="insertBatch">
+        insert into shopping_cart (name, user_id, dish_id, setmeal_id, dish_flavor, number, amount, image, create_time)
+        values
+        <foreach collection="list" item="sc" separator=",">
+            (#{sc.name}, #{sc.userId}, #{sc.dishId}, #{sc.setmealId}, #{sc.dishFlavor}, #{sc.number}, #{sc.amount}, #{sc.image}, #{sc.createTime})
+        </foreach>
+    </insert>
+
 
     <update id="update">
         update shopping_cart
