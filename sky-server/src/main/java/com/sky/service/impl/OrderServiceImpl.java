@@ -186,9 +186,20 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public PageResult historyOrders(OrdersPageQueryDTO ordersPageQueryDTO) {
         ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
-        PageHelper.startPage(ordersPageQueryDTO.getPage(),ordersPageQueryDTO.getPageSize());
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
         Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
-        return new PageResult(page.getTotal(), page.getResult());
+
+        // 前端历史订单列表需要展示每个订单的菜品明细，这里逐单组装 orderDetailList
+        List<OrderVO> orderVOList = new ArrayList<>();
+        if (page != null && page.getResult() != null) {
+            for (Orders orders : page.getResult()) {
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(orders, orderVO);
+                orderVO.setOrderDetailList(orderDetailMapper.getByOrderId(orders.getId()));
+                orderVOList.add(orderVO);
+            }
+        }
+        return new PageResult(page.getTotal(), orderVOList);
     }
 
     @Override
