@@ -203,7 +203,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 如果已支付，需要先退款
-        if (ordersDB.getPayStatus() == Orders.PAID) {
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
             try {
                 weChatPayUtil.refund(
                         ordersDB.getNumber(),
@@ -437,6 +437,49 @@ public class OrderServiceImpl implements OrderService {
                 .id(ordersDB.getId())
                 .status(Orders.CANCELLED)
                 .rejectionReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
+
+    /**
+     * 管理端取消订单（不做归属校验）
+     *
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void cancelByAdmin(OrdersCancelDTO ordersCancelDTO) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 订单状态 1待付款 2待接单 3已接单 4派送中 5已完成 6已取消
+        Integer status = ordersDB.getStatus();
+        if (status == null || Orders.COMPLETED.equals(status) || Orders.CANCELLED.equals(status)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        // 如果已支付，需要先退款
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+            try {
+                weChatPayUtil.refund(
+                        ordersDB.getNumber(),
+                        ordersDB.getNumber() + System.currentTimeMillis(),
+                        ordersDB.getAmount(),
+                        ordersDB.getAmount());
+            } catch (Exception e) {
+                log.error("订单退款失败：{}", e.getMessage());
+                throw new OrderBusinessException("订单退款失败");
+            }
+        }
+
+        // 更新订单状态为已取消(6)，记录取消原因和取消时间
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
                 .cancelTime(LocalDateTime.now())
                 .build();
         orderMapper.update(orders);
