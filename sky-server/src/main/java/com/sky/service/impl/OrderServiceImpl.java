@@ -1,6 +1,6 @@
 package com.sky.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSON;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
@@ -18,6 +18,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +48,8 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     @Transactional
     @Override
@@ -139,6 +143,9 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.update(orders);
         log.warn("模拟支付成功：订单号={}，请尽快接入真实微信支付", ordersPaymentDTO.getOrderNumber());
 
+        // 支付成功后通过 WebSocket 向管理端推送来单提醒
+        sendRemindMessage(ordersDB);
+
         // 返回模拟的预支付参数（前端跳过微信调起，直接跳转支付成功页）
         return buildMockPayVO();
     }
@@ -181,6 +188,33 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+        // 支付成功后通过 WebSocket 向管理端推送来单提醒
+        sendRemindMessage(ordersDB);
+    }
+
+    /**
+     * 通过 WebSocket 向管理端浏览器推送来单提醒
+     * <p>
+     * 消息格式：type=1 来单提醒，type=2 客户催单
+     *
+     * @param orders 已支付订单
+     */
+    private void sendRemindMessage(Orders orders) {
+        if (orders == null) {
+            log.warn("推送来单提醒失败：订单为空");
+            return;
+        }
+
+        // 组装消息：type 1 来单提醒 2 客户催单
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 1);
+        map.put("orderId", orders.getId());
+        map.put("content", "订单号：" + orders.getNumber());
+
+        // 群发消息，内部已捕获异常，推送失败不会影响业务
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+        log.info("已通过WebSocket向管理端推送来单提醒, 订单id={}", orders.getId());
     }
 
     @Override
