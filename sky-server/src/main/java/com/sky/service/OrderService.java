@@ -45,6 +45,12 @@ public interface OrderService {
      */
     void repetition(Long id);
 
+    /**
+     * 用户催单
+     * @param id 订单id
+     */
+    void reminder(Long id);
+
     PageResult page(OrdersPageQueryDTO ordersPageQueryDTO);
 
     /**

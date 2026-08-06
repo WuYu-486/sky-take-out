@@ -217,6 +217,28 @@ public class OrderServiceImpl implements OrderService {
         log.info("已通过WebSocket向管理端推送来单提醒, 订单id={}", orders.getId());
     }
 
+    /**
+     * 通过 WebSocket 向管理端浏览器推送客户催单提醒
+     *
+     * @param orders 被催单的订单
+     */
+    private void sendReminderMessage(Orders orders) {
+        if (orders == null) {
+            log.warn("推送催单提醒失败：订单为空");
+            return;
+        }
+
+        // 组装消息：type 1 来单提醒 2 客户催单
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 2);
+        map.put("orderId", orders.getId());
+        map.put("content", "订单号：" + orders.getNumber());
+
+        // 群发消息，内部已捕获异常，推送失败不会影响业务
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+        log.info("已通过WebSocket向管理端推送催单提醒, 订单id={}", orders.getId());
+    }
+
     @Override
     public PageResult historyOrders(OrdersPageQueryDTO ordersPageQueryDTO) {
         ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
@@ -329,6 +351,39 @@ public class OrderServiceImpl implements OrderService {
 
         // 批量插入购物车
         shoppingCartMapper.insertBatch(shoppingCartList);
+    }
+
+    /**
+     * 用户催单
+     *
+     * @param id 订单id
+     */
+    @Override
+    public void reminder(Long id) {
+        // 入参校验
+        if (id == null) {
+            throw new OrderBusinessException(MessageConstant.PARAM_ERROR);
+        }
+
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(id);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 校验订单是否属于当前登录用户
+        if (!ordersDB.getUserId().equals(BaseContext.getCurrentId())) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 已完成或已取消的订单不能再催单
+        Integer status = ordersDB.getStatus();
+        if (status == null || Orders.COMPLETED.equals(status) || Orders.CANCELLED.equals(status)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        // 通过 WebSocket 向管理端推送客户催单提醒
+        sendReminderMessage(ordersDB);
     }
 
     @Override
