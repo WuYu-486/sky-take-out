@@ -5,7 +5,9 @@ import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -49,4 +51,53 @@ public interface OrderMapper {
      * @return
      */
     List<Map<String, Object>> countByStatus();
+
+    /**
+     * 根据状态和下单时间查询订单（下单时间早于指定时间）
+     * 用于定时任务处理超时未支付订单
+     *
+     * @param status 订单状态
+     * @param time   截止时间
+     * @return 符合条件的订单列表
+     */
+    @Select("select * from orders where status = #{status} and order_time < #{time}")
+    List<Orders> getByStatusAndOrderTimeLT(Integer status, LocalDateTime time);
+
+    /**
+     * 根据状态和预计送达时间查询订单（预计送达时间早于指定时间）
+     * 用于定时任务处理一直处于派送中的订单
+     *
+     * @param status 订单状态
+     * @param time   截止时间
+     * @return 符合条件的订单列表
+     */
+    @Select("select * from orders where status = #{status} and estimated_delivery_time < #{time}")
+    List<Orders> getByStatusAndEstimatedDeliveryTimeLT(Integer status, LocalDateTime time);
+
+    /**
+     * 按原状态条件更新订单状态，返回受影响行数
+     * 只有订单仍处于 oldStatus 时才会更新，避免定时任务并发覆盖用户已变更的订单
+     *
+     * @param id       订单id
+     * @param oldStatus 原订单状态
+     * @param newStatus 目标订单状态
+     * @return 受影响行数（0 表示订单状态已变化，无需处理）
+     */
+    @Update("update orders set status = #{newStatus} where id = #{id} and status = #{oldStatus}")
+    int updateStatusByCondition(Long id, Integer oldStatus, Integer newStatus);
+
+    /**
+     * 按原状态条件取消订单并写入取消原因、取消时间，返回受影响行数
+     * 只有订单仍处于 oldStatus 时才会取消，避免定时任务并发覆盖用户已支付的订单
+     *
+     * @param id           订单id
+     * @param oldStatus    原订单状态
+     * @param newStatus    目标订单状态
+     * @param cancelReason 取消原因
+     * @param cancelTime   取消时间
+     * @return 受影响行数（0 表示订单状态已变化，无需处理）
+     */
+    @Update("update orders set status = #{newStatus}, cancel_reason = #{cancelReason}, cancel_time = #{cancelTime} " +
+            "where id = #{id} and status = #{oldStatus}")
+    int cancelByCondition(Long id, Integer oldStatus, Integer newStatus, String cancelReason, LocalDateTime cancelTime);
 }
