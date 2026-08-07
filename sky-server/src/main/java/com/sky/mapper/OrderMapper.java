@@ -109,4 +109,13 @@ public interface OrderMapper {
      * @return 营业额合计，无数据时返回 null
      */
     Double sumByMap(Map<String, Object> map);
+
+    /**
+     * 根据动态条件统计订单数量
+     * 条件：下单时间范围（begin、end）、订单状态（status）
+     *
+     * @param map 查询条件
+     * @return 订单数量
+     */
+    Integer countByMap(Map<String, Object> map);
 }
