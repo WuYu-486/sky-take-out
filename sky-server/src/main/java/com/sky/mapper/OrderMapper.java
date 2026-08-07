@@ -100,4 +100,13 @@ public interface OrderMapper {
     @Update("update orders set status = #{newStatus}, cancel_reason = #{cancelReason}, cancel_time = #{cancelTime} " +
             "where id = #{id} and status = #{oldStatus}")
     int cancelByCondition(Long id, Integer oldStatus, Integer newStatus, String cancelReason, LocalDateTime cancelTime);
+
+    /**
+     * 根据动态条件统计营业额
+     * 条件：下单时间范围（beginTime、endTime）、订单状态（status）
+     *
+     * @param map 查询条件
+     * @return 营业额合计，无数据时返回 null
+     */
+    Double sumByMap(Map<String, Object> map);
 }
