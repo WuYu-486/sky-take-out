@@ -82,5 +82,14 @@ public interface DishMapper {
      * @return
      */
     List<Dish> listWithFlavor(Dish dish);
+
+    /**
+     * 根据状态统计菜品数量
+     *
+     * @param status 菜品状态（1起售 0停售）
+     * @return 菜品数量
+     */
+    @Select("select count(id) from dish where status = #{status}")
+    Integer countByStatus(Integer status);
 }
 
