@@ -1,12 +1,14 @@
 package com.sky.service.impl;
 
 import com.sky.constant.MessageConstant;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.sky.exception.BaseException;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
@@ -213,5 +215,47 @@ public class ReportServiceImpl implements ReportService {
         map.put("end", end);
         map.put("status", status);
         return orderMapper.countByMap(map);
+    }
+
+    /**
+     * 统计指定时间区间内销量排名前10的商品
+     * <p>
+     * 仅统计状态为已完成(5)的订单中的商品销量，按销量降序取前10
+     *
+     * @param begin 开始日期
+     * @param end   结束日期
+     * @return 销量Top10统计结果
+     */
+    @Override
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        // 入参校验：日期不能为空，且开始日期不能晚于结束日期
+        if (begin == null || end == null) {
+            throw new BaseException(MessageConstant.PARAM_ERROR);
+        }
+        if (begin.isAfter(end)) {
+            throw new BaseException(MessageConstant.PARAM_ERROR);
+        }
+
+        // 统计区间：开始日期的零点到结束日期的最后一刻
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+
+        // 查询销量排名前10的商品
+        List<GoodsSalesDTO> goodsSalesList = orderMapper.getSalesTop10(beginTime, endTime);
+
+        // 分别提取商品名称和销量，逗号拼接
+        List<String> nameList = new ArrayList<>();
+        List<Integer> numberList = new ArrayList<>();
+        if (goodsSalesList != null && !goodsSalesList.isEmpty()) {
+            for (GoodsSalesDTO goodsSales : goodsSalesList) {
+                nameList.add(goodsSales.getName());
+                numberList.add(goodsSales.getNumber());
+            }
+        }
+
+        return SalesTop10ReportVO.builder()
+                .nameList(StringUtils.join(nameList, ","))
+                .numberList(StringUtils.join(numberList, ","))
+                .build();
     }
 }

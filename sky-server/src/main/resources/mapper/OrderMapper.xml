@@ -137,4 +137,17 @@
         </where>
     </select>
 
+    <!-- 查询时间区间内销量排名前10的商品（已完成订单） -->
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select od.name, sum(od.number) as number
+        from order_detail od
+        inner join orders o on o.id = od.order_id
+        where o.status = 5
+          and o.order_time &gt;= #{beginTime}
+          and o.order_time &lt;= #{endTime}
+        group by od.name
+        order by number desc
+        limit 10
+    </select>
+
 </mapper>
