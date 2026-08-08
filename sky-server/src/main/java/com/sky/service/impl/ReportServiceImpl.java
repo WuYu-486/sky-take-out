@@ -7,15 +7,25 @@ import com.sky.exception.BaseException;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
+import com.sky.service.WorkspaceService;
+import com.sky.vo.BusinessDataVO;
 import com.sky.vo.OrderReportVO;
 import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -35,6 +45,8 @@ public class ReportServiceImpl implements ReportService {
     private OrderMapper orderMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private WorkspaceService workspaceService;
 
     /**
      * 统计指定时间区间内的营业额
@@ -257,5 +269,86 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(StringUtils.join(nameList, ","))
                 .numberList(StringUtils.join(numberList, ","))
                 .build();
+    }
+
+    /**
+     * 导出近30天的运营数据报表（Excel）
+     * <p>
+     * 基于 resources/template/运营数据报表模板.xlsx 模板填充：
+     * 第2行统计时间，第4~5行概览数据，第8~37行每天明细
+     *
+     * @param response HTTP响应，用于输出Excel文件
+     */
+    @Override
+    public void exportBusinessData(HttpServletResponse response) {
+        // 统计区间：最近30天（不含今天）
+        LocalDate begin = LocalDate.now().minusDays(30);
+        LocalDate end = LocalDate.now().minusDays(1);
+        log.info("导出运营数据报表，统计区间：{} 至 {}", begin, end);
+
+        try (InputStream in = this.getClass().getClassLoader()
+                .getResourceAsStream("template/运营数据报表模板.xlsx");
+             XSSFWorkbook excel = new XSSFWorkbook(in);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            if (in == null) {
+                throw new BaseException("运营数据报表模板不存在");
+            }
+
+            Sheet sheet = excel.getSheet("Sheet1");
+
+            // ===== 填充概览数据 =====
+            // 查询区间内的概览运营数据
+            BusinessDataVO businessData = workspaceService.getBusinessData(begin, end);
+
+            // 第2行：统计时间
+            sheet.getRow(1).getCell(1, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK)
+                    .setCellValue("时间：" + begin + "至" + end);
+
+            // 第4行：营业额、订单完成率、新增用户数
+            Row row = sheet.getRow(3);
+            row.getCell(2, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(businessData.getTurnover());
+            row.getCell(4, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(businessData.getOrderCompletionRate());
+            row.getCell(6, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(businessData.getNewUsers());
+
+            // 第5行：有效订单、平均客单价
+            row = sheet.getRow(4);
+            row.getCell(2, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(businessData.getValidOrderCount());
+            row.getCell(4, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(businessData.getUnitPrice());
+
+            // ===== 填充每天明细数据（模板预留Excel第8~37行，共30天） =====
+            for (int i = 0; i < 30; i++) {
+                LocalDate date = begin.plusDays(i);
+                BusinessDataVO dailyData = workspaceService.getBusinessData(date, date);
+
+                Row detailRow = sheet.getRow(7 + i);
+                if (detailRow == null) {
+                    detailRow = sheet.createRow(7 + i);
+                }
+                detailRow.getCell(1, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(date.toString());
+                detailRow.getCell(2, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(dailyData.getTurnover());
+                detailRow.getCell(3, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(dailyData.getValidOrderCount());
+                detailRow.getCell(4, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(dailyData.getOrderCompletionRate());
+                detailRow.getCell(5, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(dailyData.getUnitPrice());
+                detailRow.getCell(6, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(dailyData.getNewUsers());
+            }
+
+            // 将Excel写入字节流
+            excel.write(out);
+
+            // 设置响应头，让浏览器以下载方式打开文件
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            String fileName = URLEncoder.encode("运营数据报表", StandardCharsets.UTF_8.name())
+                    .replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+
+            // 输出到浏览器
+            response.getOutputStream().write(out.toByteArray());
+            log.info("运营数据报表导出成功，共30天明细");
+        } catch (Exception e) {
+            log.error("导出运营数据报表失败：{}", e.getMessage(), e);
+            throw new BaseException("导出运营数据报表失败");
+        }
     }
 }
